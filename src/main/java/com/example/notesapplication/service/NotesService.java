@@ -3,7 +3,9 @@ package com.example.notesapplication.service;
 import com.example.notesapplication.controller.NotesController;
 import com.example.notesapplication.model.NotesDTO;
 import com.example.notesapplication.model.UserDTO;
+import com.example.notesapplication.repository.NotesRepository;
 import com.example.notesapplication.repository.UserRepository;
+import com.sun.tools.javac.resources.CompilerProperties;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,6 +24,9 @@ public class NotesService {
 
     @Autowired
     private UserRepository repository;
+
+    @Autowired
+    private NotesRepository notesRepository;
 
     public ResponseEntity<List<NotesDTO>> getNotes(String userEmailId) {
         LOGGER.debug("Logged in person's email Id {}", userEmailId);
@@ -46,4 +51,33 @@ public class NotesService {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+
+    public ResponseEntity<UserDTO> addNotes(String userEmailId, String notesText) {
+        LOGGER.debug("Logged in person's email Id {}", userEmailId);
+        Optional<UserDTO> user = repository.findById(userEmailId);
+        if (user.isPresent()) {
+            LOGGER.info("Successfully retrieved user details for {}", userEmailId);
+            new NotesDTO(user.get(),notesText);
+            return new ResponseEntity<>(user.get(), HttpStatus.OK);
+        } else {
+            LOGGER.error("Could not find notes for : {}", userEmailId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    public ResponseEntity<NotesDTO> updateNotes(String userEmailId, NotesDTO notes) {
+        if(notesRepository.findById(notes.getId()).isPresent()){
+            LOGGER.info("Notes already exists updating it");
+            notesRepository.save(notes);
+            return new ResponseEntity<>(notes, HttpStatus.OK);
+        } else {
+            LOGGER.info("Notes doesn't exists creating it");
+            UserDTO user = repository.getById(userEmailId);
+            NotesDTO newNotes = new NotesDTO(user, notes.getNotesText());
+            notesRepository.save(newNotes);
+            return new ResponseEntity<>(newNotes, HttpStatus.OK);
+        }
+
+    }
+
 }

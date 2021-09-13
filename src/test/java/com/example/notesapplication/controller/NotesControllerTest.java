@@ -1,5 +1,6 @@
 package com.example.notesapplication.controller;
 
+import com.example.notesapplication.model.NotesDTO;
 import com.example.notesapplication.model.UserDTO;
 import com.example.notesapplication.service.NotesService;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 import javax.servlet.http.HttpServletRequest;
 
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -64,6 +67,26 @@ public class NotesControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 
         assertThat(response.getBody()).isNull();
+    }
+
+    @Test
+    public void getNotes_HappyPath() {
+        UserDTO expectedUser = new UserDTO("john.doe@gmail.com", "YourPassword");
+
+        when(principal.getName()).thenReturn("john.doe@gmail.com");
+        when(mockRequest.getUserPrincipal()).thenReturn(principal);
+        List<NotesDTO> notes = new ArrayList<>();
+        notes.add(new NotesDTO(expectedUser, "Test Notes"));
+        ResponseEntity<List<NotesDTO>> expected = new ResponseEntity<>(notes, HttpStatus.OK);;
+        when(this.notesService.getNotes("john.doe@gmail.com")).thenReturn(expected);
+
+        ResponseEntity<List<NotesDTO>> response = notesController.getNotesForUser(mockRequest);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        List<NotesDTO> actual = response.getBody();
+        assertThat(actual).isNotNull();
+        assertThat(actual.size()).isNotZero();
+        assertThat(actual.get(0).getNotesText()).isEqualTo("Test Notes");
     }
 
 

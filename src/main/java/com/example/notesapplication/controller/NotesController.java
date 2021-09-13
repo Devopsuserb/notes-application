@@ -11,9 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -31,6 +29,28 @@ public class NotesController {
     ResponseEntity<List<NotesDTO>> getNotesForUser(HttpServletRequest request) {
         try {
             return service.getNotes(request.getUserPrincipal().getName());
+        } catch (Exception ex) {
+            LOGGER.error(" Exception occurred with : {}", ex.getMessage());
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping(path = "/addNotes", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<UserDTO> addNotesForUser(@RequestBody String notesText, HttpServletRequest request) {
+        try {
+            return notesText.length() < 50 ? service.addNotes(request.getUserPrincipal().getName(), notesText) :
+                    new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception ex) {
+            LOGGER.error(" Exception occurred with : {}", ex.getMessage());
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PutMapping(path = "/updateNotes", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<NotesDTO> updateNotesForUser(@RequestBody NotesDTO notes, HttpServletRequest request) {
+        try {
+            return notes.getNotesText().length() < 50 ? service.updateNotes(request.getUserPrincipal().getName(), notes) :
+                    new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception ex) {
             LOGGER.error(" Exception occurred with : {}", ex.getMessage());
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
