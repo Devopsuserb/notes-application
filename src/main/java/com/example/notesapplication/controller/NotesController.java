@@ -1,9 +1,12 @@
 package com.example.notesapplication.controller;
 
+import com.example.notesapplication.exception.ServerException;
 import com.example.notesapplication.model.NotesDTO;
 import com.example.notesapplication.model.UserDTO;
-import com.example.notesapplication.repository.UserRepository;
 import com.example.notesapplication.service.NotesService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @Log4j2
@@ -31,7 +33,7 @@ public class NotesController {
             return service.getNotes(request.getUserPrincipal().getName());
         } catch (Exception ex) {
             LOGGER.error(" Exception occurred with : {}", ex.getMessage());
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            throw new ServerException();
         }
     }
 
@@ -42,21 +44,39 @@ public class NotesController {
                     new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception ex) {
             LOGGER.error(" Exception occurred with : {}", ex.getMessage());
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            throw new ServerException();
         }
     }
 
     @PutMapping(path = "/updateNotes", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<NotesDTO> updateNotesForUser(@RequestBody NotesDTO notes, HttpServletRequest request) {
+    ResponseEntity<NotesDTO> updateNotesForUser(@RequestBody String jsonString, HttpServletRequest request) {
         try {
+            NotesDTO notes = getNotesFromJson(jsonString);
+            LOGGER.info("Trying to update notes : {}", notes);
             return notes.getNotesText().length() < 50 ? service.updateNotes(request.getUserPrincipal().getName(), notes) :
                     new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception ex) {
             LOGGER.error(" Exception occurred with : {}", ex.getMessage());
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            throw new ServerException();
         }
     }
 
+    private NotesDTO getNotesFromJson(String jsonString) throws com.fasterxml.jackson.core.JsonProcessingException {
+        LOGGER.info("Trying to parse json to NotesDTO : {}", jsonString);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        return objectMapper.readValue(jsonString, NotesDTO.class);
+    }
+
+    @DeleteMapping(path = "/deleteNotes", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    HttpStatus deleteNotesForUser(@RequestBody String jsonString, HttpServletRequest request) {
+        try {
+            return service.deleteNotes(getNotesFromJson(jsonString));
+        } catch (Exception ex) {
+            LOGGER.error(" Exception occurred with : {}", ex.getMessage());
+            throw new ServerException();
+        }
+    }
 
     @GetMapping(path = "/getUserDetails", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<UserDTO> getUser(HttpServletRequest request) {
@@ -64,7 +84,7 @@ public class NotesController {
             return service.getUserDetails(request.getUserPrincipal().getName());
         } catch (Exception ex) {
             LOGGER.error(" Exception occurred with : {}", ex.getMessage());
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            throw new ServerException();
         }
     }
 

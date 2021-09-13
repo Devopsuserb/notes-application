@@ -5,7 +5,6 @@ import com.example.notesapplication.model.NotesDTO;
 import com.example.notesapplication.model.UserDTO;
 import com.example.notesapplication.repository.NotesRepository;
 import com.example.notesapplication.repository.UserRepository;
-import com.sun.tools.javac.resources.CompilerProperties;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,7 +76,15 @@ public class NotesService {
             notesRepository.save(newNotes);
             return new ResponseEntity<>(newNotes, HttpStatus.OK);
         }
-
     }
 
+    public HttpStatus deleteNotes(NotesDTO notes) {
+        if(notesRepository.findById(notes.getId()).isPresent()){
+            LOGGER.info("Notes already deleting it");
+            notesRepository.delete(notes);
+        } else {
+            LOGGER.info("Notes doesn't exists");
+        }
+        return HttpStatus.OK;
+    }
 }
